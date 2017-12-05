@@ -5,7 +5,7 @@
 // //     'Shake or press menu button for dev menu',
 // // });
 /*  
-  BluetoothSerial API:
+  BluetoothSerial API
   isEnabled()
   list()
   on('',function)
