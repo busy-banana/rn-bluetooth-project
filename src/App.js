@@ -26,6 +26,7 @@ import {
   TouchableHighlight,
   TouchableOpacity,
 } from 'react-native';
+import DeviceList from './components/deviceList';
 import Toast from '@remobile/react-native-toast';
 import BluetoothSerial from 'react-native-bluetooth-serial';
 
@@ -96,7 +97,6 @@ export default class App extends Component {
     }
   }
 
-
   render() {
     return (
       <View style={styles.container}>
@@ -130,6 +130,8 @@ export default class App extends Component {
               </Text>
             </TouchableOpacity>
           </View> : null }
+
+        {/* <DeviceList /> */}
 
         { Platform.OS == 'android' ? 
           <View style={styles.bottom}>
