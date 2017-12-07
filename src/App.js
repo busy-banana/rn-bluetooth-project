@@ -7,7 +7,7 @@
   disconnect()
   write(msg)
   readFromDevice()
-  
+
   enable()    Android
   disable()   Android
   requestEnable()   Android
@@ -111,7 +111,7 @@ export default class App extends Component {
         connectedDevice: {id: device.id, name: device.name},
       });
     }).catch((err) => {
-      Toast.showShortTop(`${device.name} 连接失败`)
+      Toast.showShortTop(`${device.name} 连接失败 ${err.message}`)
     })
   }
 
@@ -147,12 +147,20 @@ export default class App extends Component {
 
   //搜索可配对设备 Android Only
   discoverUnpairedDevices(){
-    console.log('123')
+    BluetoothSerial.discoverUnpairedDevices().then((unpairedDevices) => {
+        this.setState({ unpairedDevices })
+    }).catch((err) => {
+      Toast.showShortTop(err.message)  
+    }) 
   }
 
   //取消搜索
   cancelDiscovery(){
-
+    BluetoothSerial.cancelDiscovery().then((res) => {
+      this.setState({discoverind: false})
+    }).catch((err) => {
+      Toast.showShortTop(err.message)  
+    }) 
   }
 
   render() {
