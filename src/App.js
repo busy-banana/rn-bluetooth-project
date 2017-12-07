@@ -6,7 +6,8 @@
   connect(id)
   disconnect()
   write(msg)
-
+  readFromDevice()
+  
   enable()    Android
   disable()   Android
   requestEnable()   Android
@@ -36,8 +37,9 @@ export default class App extends Component {
     this.state = {
       isEnabled: false,
       devices: [],
-      connected: false,
+      unpairedDevices: [],
       isLeft: true,
+      connectedDevice: {},
     }
   }
   
@@ -45,6 +47,7 @@ export default class App extends Component {
     this.getInitData();
   }
 
+  //获取初始化数据
   getInitData() {
     Promise.all([
       BluetoothSerial.isEnabled(),
@@ -58,15 +61,16 @@ export default class App extends Component {
     })
   }
 
+  //切换蓝牙开关按钮
   changeSwitch() {
-    if(this.state.isEnabled == false){
+    if (this.state.isEnabled == false) {
       this.enable();
-    }else{
+    } else {
       this.disable();
     }
   }
 
-  //Only Android
+  //开启蓝牙 Android Only
   enable() {
     BluetoothSerial.enable().then((res) => {
       this.setState({isEnabled: true})
@@ -75,7 +79,7 @@ export default class App extends Component {
     })
   }
 
-  //Only Android
+  //关闭蓝牙 Android Only
   disable() {
     BluetoothSerial.disable().then((res) => {
       this.setState({isEnabled: false})
@@ -84,20 +88,79 @@ export default class App extends Component {
     })
   }
 
+  //显示已配对设备列表
   showPairedDevices() {
-    if(this.state.isLeft == false){
+    if (this.state.isLeft == false) {
       this.setState({isLeft: true});
     }
     const deviceList = this.state.devices;
   }
 
+  //显示未配对设备列表
   showUnPairedDevices() {
-    if(this.state.isLeft == true){
+    if (this.state.isLeft == true) {
       this.setState({isLeft: false});
     }
   }
 
+  //请求连接蓝牙
+  connect(device){
+    BluetoothSerial.connect(device.id).then((res) => {
+      Toast.showShortTop(`${device.name} 连接成功`);
+      this.setState({
+        connectedDevice: {id: device.id, name: device.name},
+      });
+    }).catch((err) => {
+      Toast.showShortTop(`${device.name} 连接失败`)
+    })
+  }
+
+  //请求配对蓝牙 Android Only
+  pairDevice(device){
+    BluetoothSerial.pairDevice(device.id).then((res) => {
+      if (res) {
+        Toast.showShortTop(`${device.name} 配对成功`);
+        this.setState({
+          devices: this.state.devices.push(device),
+          unpairedDevices: this.state.unpairedDevices.filter((e) => {return e.id != device.id})
+        });
+      } else {
+        Toast.showShortTop(`${device.name} 配对失败`)
+      }
+    }).catch((err) => {
+      Toast.showShortTop(err.message)  
+    }) 
+  }
+
+  //点击设备列表，连接/配对设备
+  clickDeviceList(device) {
+    if (this.state.isLeft == true) {
+      if (this.state.connectedDevice && this.state.connectedDevice.id == device.id) {
+        return null;
+      } else {
+        this.connect(device);
+      }
+    } else {
+      this.pairDevice(device);      
+    }
+  }
+
+  //搜索可配对设备 Android Only
+  discoverUnpairedDevices(){
+    console.log('123')
+  }
+
+  //取消搜索
+  cancelDiscovery(){
+
+  }
+
   render() {
+    // const devices = [
+    //   {id: 123456, name: 'device1'},
+    //   {id: 888888, name: 'device2'},
+    //   {id: 666666, name: 'device3'},
+    // ];
     return (
       <View style={styles.container}>
         { Platform.OS == 'android' ? 
@@ -131,11 +194,16 @@ export default class App extends Component {
             </TouchableOpacity>
           </View> : null }
 
-        {/* <DeviceList /> */}
+        <DeviceList
+          devices={this.state.isLeft == true ? this.state.devices : this.state.unpairedDevices}
+          showConnectedIcon={this.state.isLeft == true ? true : false}
+          connectedId={this.state.connectedDevice.id || ''}
+          onPressCallback={this.clickDeviceList.bind(this)}
+        />
 
-        { Platform.OS == 'android' ? 
+        { Platform.OS == 'android' && !this.state.isLeft ? 
           <View style={styles.bottom}>
-            <Text style={styles.bottomTitle}>
+            <Text style={styles.bottomTitle} onPress={this.discoverUnpairedDevices}>
                 搜索设备
             </Text>
           </View> : null }
