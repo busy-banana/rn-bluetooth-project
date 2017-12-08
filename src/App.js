@@ -47,14 +47,29 @@ export default class App extends Component {
   componentWillMount() {
     this.getInitData();
 
-    BluetoothSerial.on('bluetoothEnabled',() => Toast.showShortTop('蓝牙已开启'));
-    BluetoothSerial.on('bluetoothDisabled',() => Toast.showShortTop('蓝牙已关闭'));
-    BluetoothSerial.on('error',() => console.log(`Error: ${err.message}`));
+    BluetoothSerial.on('bluetoothEnabled',() => {
+      BluetoothSerial.list().then((devices) => {
+        this.setState({ devices });
+        Toast.showShortTop('蓝牙已开启');
+      }).catch((err) => {
+        Toast.showShortTop(`系统异常，请稍后再试 ${err.message}`);
+      });
+    });
+    BluetoothSerial.on('bluetoothDisabled',() => {
+      this.setState({devices: []});
+      Toast.showShortTop('蓝牙已关闭');
+    });
+    BluetoothSerial.on('error',(err) => console.log(`Error: ${err.message}`));
     BluetoothSerial.on('connectionLost',() => {
       if (this.state.connectedDevice) {
         Toast.showShortTop(`${this.state.connectedDevice.name} 失去连接`);
       }
         this.setState({ connectedDevice: {} });
+    });
+    BluetoothSerial.on('read', (res) => {
+      if (res) {
+        Toast.showShortTop(res);
+      }
     });
   }
 
@@ -67,8 +82,7 @@ export default class App extends Component {
       const [isEnabled, devices] = values;
       this.setState({isEnabled, devices});
     }).catch((err) => {
-      Toast.showShortTop('系统异常，请稍后再试');
-      console.log(err)
+      Toast.showShortTop(`系统异常，请稍后再试 ${err.message}`);
     })
   }
 
@@ -104,7 +118,6 @@ export default class App extends Component {
     if (this.state.isLeft == false) {
       this.setState({isLeft: true});
     }
-    const deviceList = this.state.devices;
   }
 
   //显示未配对设备列表
@@ -124,6 +137,21 @@ export default class App extends Component {
     }).catch((err) => {
       Toast.showShortTop(`${device.name} 连接失败 ${err.message}`)
     })
+
+    // BluetoothSerial.isConnected().then((res) => {
+    //   if (res) {
+    //       console.log('蓝牙已连接');
+    //   } else {
+    //     BluetoothSerial.connect(device.id).then((res) => {
+    //       Toast.showShortTop(`${device.name} 连接成功`);
+    //       this.setState({
+    //         connectedDevice: {id: device.id, name: device.name},
+    //       });
+    //     }).catch((err) => {
+    //       Toast.showShortTop(`${device.name} 连接失败 ${err.message}`)
+    //     });
+    //   }
+    // });
       
     // if (Platform.OS == 'android') {
     // } else {
@@ -135,9 +163,11 @@ export default class App extends Component {
   pairDevice(device){
     BluetoothSerial.pairDevice(device.id).then((res) => {
       if (res) {
+        let devices = this.state.devices;
+        devices.push(device);
         Toast.showShortTop(`${device.name} 配对成功`);
         this.setState({
-          devices: this.state.devices.push(device),
+          devices,
           unpairedDevices: this.state.unpairedDevices.filter((e) => {return e.id != device.id})
         });
       } else {
@@ -165,6 +195,8 @@ export default class App extends Component {
   discoverUnpairedDevices(){
     if (this.state.discovering) {
       return false;
+    } else if (!this.state.isEnabled) {
+      Toast.showShortTop('请先打开蓝牙')      
     } else {
       this.setState({discovering: true});    
       BluetoothSerial.discoverUnpairedDevices().then((unpairedDevices) => {

@@ -5,7 +5,6 @@ import {
   StyleSheet,
   TouchableHighlight,
   Text,
-  Image
 } from 'react-native';
 
 export default class DeviceList extends Component {
