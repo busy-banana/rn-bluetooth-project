@@ -116,14 +116,14 @@ export default class App extends Component {
 
   //请求连接蓝牙
   connect(device){
-    Toast.showShortTop(device.id+'--'+device.name)
-    // BluetoothSerial.connect(device.id).then((res) => {
-    //   Toast.showShortTop(`${device.name} 连接成功`);
-    //   this.setState({
-    //     connectedDevice: {id: device.id, name: device.name},
-    //   });
-    // }).catch((err) => {
-    // })
+    BluetoothSerial.connect(device.id).then((res) => {
+      Toast.showShortTop(`${device.name} 连接成功`);
+      this.setState({
+        connectedDevice: {id: device.id, name: device.name},
+      });
+    }).catch((err) => {
+      Toast.showShortTop(`${device.name} 连接失败 ${err.message}`)
+    })
       
     // if (Platform.OS == 'android') {
     // } else {
