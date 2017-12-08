@@ -22,10 +22,10 @@ import {
   StyleSheet,
   Text,
   View,
-  Button,
   Switch,
   TouchableHighlight,
   TouchableOpacity,
+  ActivityIndicator
 } from 'react-native';
 import DeviceList from './components/deviceList';
 import Toast from '@remobile/react-native-toast';
@@ -40,11 +40,22 @@ export default class App extends Component {
       unpairedDevices: [],
       isLeft: true,
       connectedDevice: {},
+      discovering: false,
     }
   }
   
   componentWillMount() {
     this.getInitData();
+
+    BluetoothSerial.on('bluetoothEnabled',() => Toast.showShortTop('蓝牙已开启'));
+    BluetoothSerial.on('bluetoothDisabled',() => Toast.showShortTop('蓝牙已关闭'));
+    BluetoothSerial.on('error',() => console.log(`Error: ${err.message}`));
+    BluetoothSerial.on('connectionLost',() => {
+      if (this.state.connectedDevice) {
+        Toast.showShortTop(`${this.state.connectedDevice.name} 失去连接`);
+      }
+        this.setState({ connectedDevice: {} });
+    });
   }
 
   //获取初始化数据
@@ -105,14 +116,19 @@ export default class App extends Component {
 
   //请求连接蓝牙
   connect(device){
-    BluetoothSerial.connect(device.id).then((res) => {
-      Toast.showShortTop(`${device.name} 连接成功`);
-      this.setState({
-        connectedDevice: {id: device.id, name: device.name},
-      });
-    }).catch((err) => {
-      Toast.showShortTop(`${device.name} 连接失败 ${err.message}`)
-    })
+    Toast.showShortTop(device.id+'--'+device.name)
+    // BluetoothSerial.connect(device.id).then((res) => {
+    //   Toast.showShortTop(`${device.name} 连接成功`);
+    //   this.setState({
+    //     connectedDevice: {id: device.id, name: device.name},
+    //   });
+    // }).catch((err) => {
+    // })
+      
+    // if (Platform.OS == 'android') {
+    // } else {
+    //   Toast.showShortTop('手机平台不匹配，无法连接');      
+    // }
   }
 
   //请求配对蓝牙 Android Only
@@ -136,7 +152,7 @@ export default class App extends Component {
   clickDeviceList(device) {
     if (this.state.isLeft == true) {
       if (this.state.connectedDevice && this.state.connectedDevice.id == device.id) {
-        return null;
+        return false;
       } else {
         this.connect(device);
       }
@@ -147,28 +163,30 @@ export default class App extends Component {
 
   //搜索可配对设备 Android Only
   discoverUnpairedDevices(){
-    BluetoothSerial.discoverUnpairedDevices().then((unpairedDevices) => {
-        this.setState({ unpairedDevices })
-    }).catch((err) => {
-      Toast.showShortTop(err.message)  
-    }) 
+    if (this.state.discovering) {
+      return false;
+    } else {
+      this.setState({discovering: true});    
+      BluetoothSerial.discoverUnpairedDevices().then((unpairedDevices) => {
+          this.setState({ unpairedDevices, discovering: false })
+      }).catch((err) => {
+        Toast.showShortTop(err.message)  
+      }) 
+    }  
   }
 
-  //取消搜索
+  //取消搜索 Android Only
   cancelDiscovery(){
-    BluetoothSerial.cancelDiscovery().then((res) => {
-      this.setState({discoverind: false})
-    }).catch((err) => {
-      Toast.showShortTop(err.message)  
-    }) 
+    if (this.state.discovering) {
+      BluetoothSerial.cancelDiscovery().then((res) => {
+        this.setState({discovering: false})
+      }).catch((err) => {
+        Toast.showShortTop(err.message)  
+      }) 
+    }
   }
 
   render() {
-    // const devices = [
-    //   {id: 123456, name: 'device1'},
-    //   {id: 888888, name: 'device2'},
-    //   {id: 666666, name: 'device3'},
-    // ];
     return (
       <View style={styles.container}>
         { Platform.OS == 'android' ? 
@@ -202,6 +220,19 @@ export default class App extends Component {
             </TouchableOpacity>
           </View> : null }
 
+
+        {!this.state.isLeft && this.state.discovering ? 
+          (<View style={styles.loading}>
+              <ActivityIndicator
+                color='#4ec9ab'
+                size={45}
+                style={{marginBottom: 15}}              
+              />
+              <Text onPress={this.cancelDiscovery.bind(this)} style={styles.cancelBtn}>取消搜索</Text>
+            </View>
+          ) : null
+        }
+      
         <DeviceList
           devices={this.state.isLeft == true ? this.state.devices : this.state.unpairedDevices}
           showConnectedIcon={this.state.isLeft == true ? true : false}
@@ -211,7 +242,7 @@ export default class App extends Component {
 
         { Platform.OS == 'android' && !this.state.isLeft ? 
           <View style={styles.bottom}>
-            <Text style={styles.bottomTitle} onPress={this.discoverUnpairedDevices}>
+            <Text style={styles.bottomTitle} onPress={this.discoverUnpairedDevices.bind(this)}>
                 搜索设备
             </Text>
           </View> : null }
@@ -260,7 +291,7 @@ const styles = StyleSheet.create({
   bottom: {
     flexDirection: 'row',
     justifyContent: 'center',
-    alignItems: 'center',    
+    alignItems: 'center',  
     backgroundColor: '#f0f0f0',
     height: 60
   },
@@ -268,5 +299,16 @@ const styles = StyleSheet.create({
     color: '#4ec9ab',
     fontSize: 18,
     fontWeight: 'bold'
+  },
+  loading: {
+    marginTop: 160,
+    alignItems: 'center',
+  },
+  cancelBtn: {
+    backgroundColor: '#4ec9ab',
+    color: '#fff',
+    fontSize: 15,
+    padding: 8,
+    borderRadius: 4
   }
 });

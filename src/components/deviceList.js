@@ -64,12 +64,12 @@ const styles = StyleSheet.create({
   listView: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginRight: 40
+    marginRight: 30,
   },
   listLogo: {
     width:20,
     height:20,
-    marginRight: 20,
+    marginRight: 10,
     justifyContent: 'center',
   },
   pairedLogo: {
