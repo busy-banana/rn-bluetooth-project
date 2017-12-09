@@ -25,8 +25,8 @@ export default class DeviceList extends Component {
               <View style={styles.listLogo}>
                 {showConnectedIcon ? 
                   (connectedId == device.id ? 
-                    <Text style={styles.pairedLogo}></Text>: null)
-                  : null
+                    <Text style={styles.pairedLogo}></Text>: null
+                  ): null
                 }
               </View> 
               <View style={{flexDirection: 'row',alignItems: 'center'}}>

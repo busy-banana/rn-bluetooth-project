@@ -7,6 +7,7 @@
   disconnect()
   write(msg)
   readFromDevice()
+  read()
 
   enable()    Android
   disable()   Android
@@ -55,11 +56,14 @@ export default class App extends Component {
         Toast.showShortTop(`系统异常，请稍后再试 ${err.message}`);
       });
     });
+
     BluetoothSerial.on('bluetoothDisabled',() => {
       this.setState({devices: []});
       Toast.showShortTop('蓝牙已关闭');
     });
+
     BluetoothSerial.on('error',(err) => console.log(`Error: ${err.message}`));
+    
     BluetoothSerial.on('connectionLost',() => {
       if (this.state.connectedDevice) {
         Toast.showShortTop(`${this.state.connectedDevice.name} 失去连接`);
