@@ -1,21 +1,20 @@
-/*  
-  BluetoothSerial API
-  isEnabled()
-  list()   return paired devices only in Andoid
-  on('',function)
-  connect(id)
-  disconnect()
-  write(msg)
-  readFromDevice()
-  read()
-
-  enable()    Android
-  disable()   Android
-  requestEnable()   Android
-  discoverUnpairedDevices()   Android
-  cancelDiscovery()   Android
-  pairDevice(id)    Android
-*/
+/**  
+ * BluetoothSerial API
+ * isEnabled()
+ * list()   return paired devices only in Andoid
+ * on('',function)
+ * connect(id)
+ * disconnect()
+ * write(msg)
+ * readFromDevice()
+ * read()
+ * enable()    Android
+ * disable()   Android
+ * requestEnable()   Android
+ * discoverUnpairedDevices()   Android
+ * cancelDiscovery()   Android
+ * pairDevice(id)    Android
+ */
 
 import React, { Component } from 'react';
 import {
@@ -70,11 +69,7 @@ export default class App extends Component {
       }
         this.setState({ connectedDevice: {} });
     });
-    BluetoothSerial.on('read', (res) => {
-      if (res) {
-        Toast.showShortTop(res);
-      }
-    });
+    BluetoothSerial.on('read', this.handleReadData);
   }
 
   //获取初始化数据
@@ -196,7 +191,7 @@ export default class App extends Component {
   }
 
   //搜索可配对设备 Android Only
-  discoverUnpairedDevices(){
+  discoverUnpairedDevices() {
     if (this.state.discovering) {
       return false;
     } else if (!this.state.isEnabled) {
@@ -212,7 +207,7 @@ export default class App extends Component {
   }
 
   //取消搜索 Android Only
-  cancelDiscovery(){
+  cancelDiscovery() {
     if (this.state.discovering) {
       BluetoothSerial.cancelDiscovery().then((res) => {
         this.setState({discovering: false})
@@ -220,6 +215,47 @@ export default class App extends Component {
         Toast.showShortTop(err.message)  
       }) 
     }
+  }
+
+   /**
+   * 向外围设备发送数据
+   * @param  {String} message
+   */
+  write (message) {
+    if (!this.state.connected) {
+      Toast.showShortBottom('You must connect to device first')
+    }
+
+    BluetoothSerial.write(message)
+    .then((res) => {
+      Toast.showShortBottom('Successfuly wrote to device')
+      this.setState({ connected: true })
+    })
+    .catch((err) => Toast.showShortBottom(err.message))
+  }
+
+  writePackets (message, packetSize = 64) {
+    const toWrite = iconv.encode(message, 'cp852')
+    const writePromises = []
+    const packetCount = Math.ceil(toWrite.length / packetSize)
+
+    for (var i = 0; i < packetCount; i++) {
+      const packet = new Buffer(packetSize)
+      packet.fill(' ')
+      toWrite.copy(packet, 0, i * packetSize, (i + 1) * packetSize)
+      writePromises.push(BluetoothSerial.write(packet))
+    }
+
+    Promise.all(writePromises)
+    .then((result) => {
+    })
+  }
+
+  //处理接受数据
+  handleReadData(res) {
+      if (res) {
+        Toast.showShortTop(res);
+      }
   }
 
   render() {
