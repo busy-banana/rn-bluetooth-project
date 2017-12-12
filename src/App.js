@@ -25,9 +25,11 @@ import {
   Switch,
   TouchableHighlight,
   TouchableOpacity,
-  ActivityIndicator
+  ActivityIndicator,
+  Modal,
 } from 'react-native';
-import DeviceList from './components/deviceList';
+import DeviceList from './modules/deviceList';
+import DataDisplay from './modules/dataDisplay';
 import Toast from '@remobile/react-native-toast';
 import BluetoothSerial from 'react-native-bluetooth-serial';
 
@@ -40,7 +42,13 @@ export default class App extends Component {
       unpairedDevices: [],
       isLeft: true,
       connectedDevice: {},
-      discovering: false,
+      discovering: false, //设备搜索状态
+      modalVisible: false,
+      deviceReady: {}, //点击设备列表，保存设备信息
+      // isDataDisplay: false, //是否展示数据调试页面
+      isDataDisplay: true, //是否展示数据调试页面
+      readData: '', 
+      textInputValue: '',
     }
   }
   
@@ -132,6 +140,7 @@ export default class App extends Component {
       Toast.showShortTop(`${device.name} 连接成功`);
       this.setState({
         connectedDevice: {id: device.id, name: device.name},
+        modalVisible: false
       });
     }).catch((err) => {
       Toast.showShortTop(`${device.name} 连接失败 ${err.message}`)
@@ -175,19 +184,6 @@ export default class App extends Component {
     }).catch((err) => {
       Toast.showShortTop(err.message)  
     }) 
-  }
-
-  //点击设备列表，连接/配对设备
-  clickDeviceList(device) {
-    if (this.state.isLeft == true) {
-      if (this.state.connectedDevice && this.state.connectedDevice.id == device.id) {
-        return false;
-      } else {
-        this.connect(device);
-      }
-    } else {
-      this.pairDevice(device);      
-    }
   }
 
   //搜索可配对设备 Android Only
@@ -252,13 +248,71 @@ export default class App extends Component {
   }
 
   //处理接受数据
-  handleReadData(res) {
-      if (res) {
-        Toast.showShortTop(res);
+  handleReadData(readData) {
+    console.log(readData);
+      if (!!readData) {
+        this.setState({readData});
       }
   }
 
+  //点击设备列表，连接/配对设备
+  clickDeviceList() {
+    const device = this.state.deviceReady || {};
+    if (this.state.connectedDevice && this.state.connectedDevice.id == device.id) {
+      Toast.showShortTop(`${device.name} 已连接`)
+    } else if (this.state.connectedDevice.id) {
+      BluetoothSerial.disconnect()
+        .then(() => {this.connect(device)})
+        .catch((err) => Toast.showShortTop(err.message))
+    } else {
+      this.connect(device);
+    }
+  }
+
+  //打开Modal浮层
+  onRequestOpen(deviceReady) {
+    if (!this.state.modalVisible && this.state.isLeft) {
+      this.setState({deviceReady, modalVisible: true});
+    } else if (!this.state.isLeft) {
+      this.pairDevice(deviceReady);      
+    }
+  }
+
+  //关闭Modal浮层
+  onRequestClose() {
+    if (this.state.modalVisible) {
+      this.setState({modalVisible: false});
+    }
+  }
+
+  //打开数据调试页面
+  showDataDisplay() {
+    if (!this.state.isDataDisplay) {
+      this.setState({isDataDisplay: true})
+    }
+  }
+
+  //返回首页
+  onBack() {
+    if (this.state.isDataDisplay) {
+      this.setState({isDataDisplay: false});
+    }
+  }
+
+  //同步输入框的值
+  handleTextInputChange(textInputValue) {
+    this.setState({textInputValue});
+  }
+
   render() {
+    const device123 = [{id: 666662, name:'device1'},{id: 666666, name:'device3'},{id: 666661, name:'device2'}];
+    const dataDisplay = this.state.isDataDisplay ? (
+      <DataDisplay
+        readData={this.state.readData}
+        sendData={this.write.bind(this)}
+        onBack={this.onBack.bind(this)}
+        onChangeText={this.handleTextInputChange.bind(this)}
+      />) : null;
     return (
       <View style={styles.container}>
         { Platform.OS == 'android' ? 
@@ -306,11 +360,40 @@ export default class App extends Component {
         }
       
         <DeviceList
-          devices={this.state.isLeft == true ? this.state.devices : this.state.unpairedDevices}
+          devices={device123}
+          // devices={this.state.isLeft == true ? this.state.devices : this.state.unpairedDevices}
           showConnectedIcon={this.state.isLeft == true ? true : false}
-          connectedId={this.state.connectedDevice.id || ''}
-          onPressCallback={this.clickDeviceList.bind(this)}
+          // connectedId={this.state.connectedDevice.id || ''}
+          connectedId='666666'
+          onPressCallback={this.onRequestOpen.bind(this)}
         />
+
+        <Modal
+          animationType={"fade"}
+          transparent={true}
+          visible={this.state.modalVisible}
+          onRequestClose={() => {this.onRequestClose.bind(this)}}
+        >
+          <TouchableOpacity
+            style={styles.modalView}
+            onPress={this.onRequestClose.bind(this)}
+          >
+            <View style={styles.modalSelect}>
+              <View style={{borderRightColor: '#b1b1b1',borderRightWidth: 1}}>
+                <Text style={styles.modalTitle} onPress={this.clickDeviceList.bind(this)}>
+                  连接
+                </Text>
+              </View>
+              <View>                
+                <Text style={styles.modalTitle} onPress={this.showDataDisplay.bind(this)}>
+                  调试
+                </Text>
+              </View>
+            </View>
+          </TouchableOpacity>
+        </Modal>
+
+        {dataDisplay}
 
         { Platform.OS == 'android' && !this.state.isLeft ? 
           <View style={styles.bottom}>
@@ -382,5 +465,24 @@ const styles = StyleSheet.create({
     fontSize: 15,
     padding: 8,
     borderRadius: 4
+  },
+  modalView: {
+    flex:1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(177, 177, 177, 0.4)',
+  },
+  modalSelect: {
+    width: 180,
+    height: 70,
+    flexDirection: 'row',
+    backgroundColor:'#fff',
+    borderRadius: 6,
+    alignItems:'center',
+    justifyContent:'center'
+  },
+  modalTitle: {
+    width: 88,
+    textAlign: 'center',
   }
 });
