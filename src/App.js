@@ -46,7 +46,7 @@ export default class App extends Component {
       modalVisible: false,
       deviceReady: {}, //点击设备列表，保存设备信息
       // isDataDisplay: false, //是否展示数据调试页面
-      isDataDisplay: false, //是否展示数据调试页面
+      isDataDisplay: true, //是否展示数据调试页面
       readData: '', 
       textInputValue: '',
     }
@@ -260,19 +260,13 @@ export default class App extends Component {
     const device = this.state.deviceReady || {};
     if (this.state.connectedDevice && this.state.connectedDevice.id == device.id) {
       Toast.showShortTop(`${device.name} 已连接`)
-    // } else if (this.state.connectedDevice.id) {
-    //   BluetoothSerial.disconnect()
-    //     .then(() => {this.connect(device)})
-    //     .catch((err) => Toast.showShortTop(err.message))
-    // } else {
-    //   this.connect(device);
-    // }
-    }else {
-        BluetoothSerial.disconnect()
-          .then(() => {this.connect(device)})
-          .catch((err) => Toast.showShortTop(err.message))
-    }  
-
+    } else if (this.state.connectedDevice.id) {
+      BluetoothSerial.disconnect()
+        .then(() => {this.connect(device)})
+        .catch((err) => Toast.showShortTop(err.message))
+    } else {
+      this.connect(device);
+    }
   }
 
   //打开Modal浮层
@@ -366,11 +360,11 @@ export default class App extends Component {
         }
       
         <DeviceList
-          // devices={device123}
-          devices={this.state.isLeft == true ? this.state.devices : this.state.unpairedDevices}
+          devices={device123}
+          // devices={this.state.isLeft == true ? this.state.devices : this.state.unpairedDevices}
           showConnectedIcon={this.state.isLeft == true ? true : false}
-          connectedId={this.state.connectedDevice.id || ''}
-          // connectedId='666666'
+          // connectedId={this.state.connectedDevice.id || ''}
+          connectedId='666666'
           onPressCallback={this.onRequestOpen.bind(this)}
         />
 
