@@ -46,7 +46,7 @@ export default class App extends Component {
       modalVisible: false,
       deviceReady: {}, //点击设备列表，保存设备信息
       // isDataDisplay: false, //是否展示数据调试页面
-      isDataDisplay: true, //是否展示数据调试页面
+      isDataDisplay: false, //是否展示数据调试页面
       readData: '', 
       textInputValue: '',
     }
@@ -260,13 +260,19 @@ export default class App extends Component {
     const device = this.state.deviceReady || {};
     if (this.state.connectedDevice && this.state.connectedDevice.id == device.id) {
       Toast.showShortTop(`${device.name} 已连接`)
-    } else if (this.state.connectedDevice.id) {
-      BluetoothSerial.disconnect()
-        .then(() => {this.connect(device)})
-        .catch((err) => Toast.showShortTop(err.message))
-    } else {
-      this.connect(device);
-    }
+    // } else if (this.state.connectedDevice.id) {
+    //   BluetoothSerial.disconnect()
+    //     .then(() => {this.connect(device)})
+    //     .catch((err) => Toast.showShortTop(err.message))
+    // } else {
+    //   this.connect(device);
+    // }
+    }else {
+        BluetoothSerial.disconnect()
+          .then(() => {this.connect(device)})
+          .catch((err) => Toast.showShortTop(err.message))
+    }  
+
   }
 
   //打开Modal浮层
@@ -360,11 +366,11 @@ export default class App extends Component {
         }
       
         <DeviceList
-          devices={device123}
-          // devices={this.state.isLeft == true ? this.state.devices : this.state.unpairedDevices}
+          // devices={device123}
+          devices={this.state.isLeft == true ? this.state.devices : this.state.unpairedDevices}
           showConnectedIcon={this.state.isLeft == true ? true : false}
-          // connectedId={this.state.connectedDevice.id || ''}
-          connectedId='666666'
+          connectedId={this.state.connectedDevice.id || ''}
+          // connectedId='666666'
           onPressCallback={this.onRequestOpen.bind(this)}
         />
 
@@ -470,7 +476,7 @@ const styles = StyleSheet.create({
     flex:1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: 'rgba(177, 177, 177, 0.4)',
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
   },
   modalSelect: {
     width: 180,
