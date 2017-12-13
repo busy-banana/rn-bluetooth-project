@@ -5,6 +5,7 @@ import {
   TextInput,
   StyleSheet,
   Modal,
+  TouchableOpacity,
   // Dimensions,
 } from 'react-native';
 
@@ -36,10 +37,37 @@ export default class DataDebug extends Component {
               />
             </View>
             <View style={{flexDirection: 'row',justifyContent: 'space-around',marginTop: 20}}>
-              <Text style={styles.titleBtn} onPress={this.props.sendData}>发送</Text>
-            {/* </View> */}
-            {/* <View> */}
-              <Text style={styles.titleBtn} onPress={this.props.onBack}>返回</Text>
+              <TouchableOpacity
+                onPress={this.props.onWriteString}  
+                style={styles.titleBtn}
+                activeOpacity={0.6}
+              >
+                <Text style={styles.btnText}>发送(Str)</Text>              
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                onPress={this.props.onWriteText}  
+                style={styles.titleBtn}
+                activeOpacity={0.6}
+              >
+                <Text style={styles.btnText}>发送(Text)</Text>              
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                onPress={this.props.onWriteHex}  
+                style={styles.titleBtn}
+                activeOpacity={0.6}
+              >
+                <Text style={styles.btnText}>发送(Hex)</Text>              
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                onPress={this.props.onBack}
+                style={styles.titleBtn}
+                activeOpacity={0.6}
+              >
+                <Text style={styles.btnText}>返回</Text>
+              </TouchableOpacity>
             </View>
           </View>
         </Modal>        
@@ -53,19 +81,25 @@ const styles = StyleSheet.create({
     borderWidth: 1.5,
     borderColor: '#b1b1b1',
     backgroundColor: '#dfdfdf',
-    margin: 6
+    margin: 6,
+    color: '#000',
+    fontSize: 12
   },
   title: {
     fontWeight: 'bold',
     color: '#4ec9ab',
   },
   titleBtn: {
-    fontWeight: 'bold',
-    fontSize: 16,
-    width: 50,
-    height:25,
+    width: 80,
+    height:30,
     backgroundColor: '#4ec9ab',
-    borderWidth: 1,
-    // borderColor: '#4ec9ab'
+    borderRadius: 3,
+    justifyContent: 'center',
+    alignItems: 'center'
   },
+  btnText: {
+    fontWeight: 'bold',
+    fontSize: 12,
+    color: '#fff'
+  }
 });

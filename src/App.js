@@ -44,9 +44,8 @@ export default class App extends Component {
       connectedDevice: {},
       discovering: false, //设备搜索状态
       modalVisible: false,
-      deviceReady: {}, //点击设备列表，保存设备信息
-      // isDataDisplay: false, //是否展示数据调试页面
-      isDataDisplay: true, //是否展示数据调试页面
+      deviceReady: {}, //点击设备列表，保存设备信息，connect时会取出信息
+      isDataDisplay: false, //是否展示数据调试页面
       readData: '', 
       textInputValue: '',
     }
@@ -217,20 +216,22 @@ export default class App extends Component {
    * 向外围设备发送数据
    * @param  {String} message
    */
-  write (message) {
-    if (!this.state.connected) {
-      Toast.showShortBottom('You must connect to device first')
+  write() {
+    const message = this.state.textInputValue;
+    const device = this.state.deviceReady;
+    if (!this.state.connectedDevice.id || this.state.connectedDevice.id != device.id) {      
+      Toast.showShortTop(`请先连接${device.name}设备`)      
+    } else {
+      BluetoothSerial.write(message)
+      .then((res) => {
+        Toast.showShortTop('String数据写入成功')
+      }).catch((err) => {
+        Toast.showShortTop(err.message)
+      })
     }
-
-    BluetoothSerial.write(message)
-    .then((res) => {
-      Toast.showShortBottom('Successfuly wrote to device')
-      this.setState({ connected: true })
-    })
-    .catch((err) => Toast.showShortBottom(err.message))
   }
 
-  writePackets (message, packetSize = 64) {
+  writePackets(message, packetSize = 64) {
     const toWrite = iconv.encode(message, 'cp852')
     const writePromises = []
     const packetCount = Math.ceil(toWrite.length / packetSize)
@@ -247,6 +248,38 @@ export default class App extends Component {
     })
   }
 
+  //把文本转换为bytes发送给蓝牙设备
+  writeTextToDevice() {
+    const message = this.state.textInputValue;
+    const device = this.state.deviceReady;
+    if (!this.state.connectedDevice.id || this.state.connectedDevice.id != device.id) {      
+      Toast.showShortTop(`请先连接${device.name}设备`)      
+    } else {      
+      BluetoothSerial.writeTextToDevice(message)
+      .then((res) => {
+        Toast.showShortTop('Text数据写入成功')
+      }).catch((err) => {
+        Toast.showShortTop(err.message)
+      })
+    }
+  }
+
+  //把16进制转换为bytes发送给蓝牙设备
+  writeHexToDevice() {
+    const message = this.state.textInputValue;
+    const device = this.state.deviceReady;
+    if (!this.state.connectedDevice.id || this.state.connectedDevice.id != device.id) {
+      Toast.showShortTop(`请先连接${device.name}设备`)
+    } else {      
+      BluetoothSerial.writeHexToDevice(message)
+      .then((res) => {
+        Toast.showShortTop('Hex数据写入成功')
+      }).catch((err) => {
+        Toast.showShortTop(err.message)
+      })
+    }
+  }
+
   //处理接受数据
   handleReadData(readData) {
     console.log(readData);
@@ -260,7 +293,7 @@ export default class App extends Component {
     const device = this.state.deviceReady || {};
     if (this.state.connectedDevice && this.state.connectedDevice.id == device.id) {
       Toast.showShortTop(`${device.name} 已连接`)
-    } else if (this.state.connectedDevice.id) {
+    } else if (!!this.state.connectedDevice.id) {
       BluetoothSerial.disconnect()
         .then(() => {this.connect(device)})
         .catch((err) => Toast.showShortTop(err.message))
@@ -305,11 +338,12 @@ export default class App extends Component {
   }
 
   render() {
-    const device123 = [{id: 666662, name:'device1'},{id: 666666, name:'device3'},{id: 666661, name:'device2'}];
     const dataDisplay = this.state.isDataDisplay ? (
       <DataDisplay
         readData={this.state.readData}
-        sendData={this.write.bind(this)}
+        onWriteString={this.write.bind(this)}
+        onWriteText={this.writeTextToDevice.bind(this)}
+        onWriteHex={this.writeHexToDevice.bind(this)}
         onBack={this.onBack.bind(this)}
         onChangeText={this.handleTextInputChange.bind(this)}
       />) : null;
@@ -360,11 +394,9 @@ export default class App extends Component {
         }
       
         <DeviceList
-          devices={device123}
-          // devices={this.state.isLeft == true ? this.state.devices : this.state.unpairedDevices}
+          devices={this.state.isLeft == true ? this.state.devices : this.state.unpairedDevices}
           showConnectedIcon={this.state.isLeft == true ? true : false}
-          // connectedId={this.state.connectedDevice.id || ''}
-          connectedId='666666'
+          connectedId={this.state.connectedDevice.id || ''}
           onPressCallback={this.onRequestOpen.bind(this)}
         />
 
