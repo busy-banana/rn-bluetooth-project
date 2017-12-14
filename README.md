@@ -6,3 +6,5 @@ react-native run-android
 
 react-native-bluetooth-serial 
 删除源码RCTBluetoothSerialPackage.java中createJSModules的@Override
+
+Android 6.0+ 必须开启定位权限
